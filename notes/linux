@@ -1,0 +1,592 @@
+Gotes on installing RedHat
+--------------------------
+- Problem #1: SATA hard drive not recognized. Looks like this is fixed in
+  newer version of Red Hat Enterprise 3 (update 2 or 3). See
+  http://www.redhat.com/archives/taroon-list/2004-August/msg00166.html
+
+  - Fixed using latest (v3 update 3).
+
+- Problem #2: Problem recognizing display card
+  - Set following fields in /etc/X11/XF86Config:
+    Driver      "vesa"
+    VendorName  "Videocard vendor"
+    BoardName   "VESA driver (generic)"
+
+- Problem #3: Can't mount /home/mbopf - no good clues; just shutdown and restart. Possible
+  problem with /etc/mtab?? Errors in /var/log/messages don't really help...
+
+- Problem with ant and Java 1.5 (OLD and out of date!!! - MWB 29Apr2013)
+  - Ant kept using old version of java. Fixed by uninstalling old RH ant 
+    rpm (1.5.2) and installing latest version (1.6.2) in /opt. Added soft link
+    from /opt/ant to /opt/apache-ant-1.6.2. 
+  - Created /etc/profile.d/java.sh script which defines JAVA_HOME & ANT_HOME,
+    and adds them to the PATH.
+  - Java is installed in /usr/java/jdk1.5.0. Added a '/usr/j2se' soft link
+    which points to it. JAVA_HOME uses the latter such that when an upgrade
+    is made, we can simply add it and change the link.
+
+- To set up an alternate NISDOMAIN server, edit /etc/yp.conf
+
+------------
+Keyboard Navigation:
+
+See: http://www.novell.com/coolsolutions/tip/2289.html
+
+Also, kernel has support for "virtual terminals". CTRL-ALT-F2 will put you into
+another shell. CTRL-ALT-F7 will return to the GUI. See:
+http://www.unixguide.net/linux/linuxshortcuts.shtml and
+http://www.tuxfiles.org/linuxhelp/shortcuts.html.
+
+There's also "mouse emulation" mode under X:
+
+> It's not a specifically Gnome thing, but there is a way to 
+> control the pointer via the keyboard in X. I found it in the
+> WindowMaker README (/usr/doc/WindowMaker/README) by accident,
+> and it came in extremely handy when I recently discovered that
+> my mouse objected to being covered in coffee.
+> 
+> You enable and disable it by hitting control-shift-numberlock. 
+> Apparently the speaker should beep but mine never does.
+> 
+> Then you use the number pad to move around:
+> 
+> / * - 	select mouse buttons: first, second, third in that order
+> . 8 .	becomes 	. 	up 	. 
+> 4 . 6	becomes		left	.	right
+> . 2 .	becomes 	.	down	.
+> 
+> Holding one of 2,4,6,8 down and pressing number 5 down speeds the mouse up.
+> Pressing 5 down on its own does a mouse click with the current button.
+> Pressing + down on its own does a double-click with the current button.
+> 0 clicks and holds down the current button.
+> . releases the button that 0 held down.
+
+
+scp
+---
+Note - this command doesn't seem to like current .bash_profile/.bashrc. Need to
+move them on remote host (archive) before running. Don't know why...
+Example:
+scp ./cvsDiff.jar archive.nlm.nih.gov:/home/mbopf/tmp
+scp archive.nlm.nih.gov:/home/mbopf/tmp/cvsDiff.jar ./cvsDiff.jar
+
+
+Missing modules when installing from rpm
+----------------------------------------
+Error when trying to install pine (rpm -ivh pine-4.64-1.i386.rpm):
+error: Failed dependencies:
+        libldap.so.2 is needed by pine-4.64-1.i386
+    Suggested resolutions:
+        compat-openldap-2.1.30-4.i386.rpm
+
+Following command finds necessary rpm (as suggested above):
+prompt> rpm -q --redhatprovides libldap.so.2
+compat-openldap-2.1.30-4
+
+Go to:
+http://www.rpmfind.net/
+and search for "compat-openldap" (old version number wasn't found). 
+
+
+/bin/ls: Argument list too long
+-------------------------------
+Basic problem is that ARG_MAX is normally set to 128K which is kind of small.
+Run "getconf ARG_MAX" to verify this. Can't be changed without recompiling
+kernel. On solution is to try the Solaris side since it is often higher.
+
+Better solution is to avoid the issue by using "find" and/or possibly using
+the xargs command. E.g,
+
+find /path/with/lots/of/images/ -name "*.tif" > /tmp/script.sh
+ -- OR --
+find /path/with/lots/of/images/ -name "*.tif" -exec rm {} \;
+
+See: http://www.redhat.com/archives/valhalla-list/2002-December/msg00407.html
+
+X11 Forwarding
+--------------
+To reiterate our brief discussion before I ran out tonight. If you want to
+display remote X11 clients on your computer, first connect to the remote
+computer using the "-Y" option to ssh and then run the X11 client from the
+remote ssh connection.
+
+Here is a nice little article explaining how it works and why there are still
+some pitfalls and you should only do it on machines you trust:
+
+  http://www.hackinglinuxexposed.com/articles/20040705.html
+
+  I remember now what you were saying about our new security measures getting
+  in the way of old practices. I recall now that standard system hardening
+  procedures configure X11 servers not to listen for external connections (at
+  port 6000 and above).
+
+  -Leif 
+
+Mounting vfat usb flash (in rw mode, sans root password - updated 2016.10.05)
+----------------------------
+1) sudo mkdir /media/flashdisk/[name]
+2) sudo mount -v -o uid=mbopf,gid=users /dev/sdc1 /media/flashdisk/[name]
+
+- Note: first device is usually sdc1, next is sdd1, etc. Use these commands:
+# sudo fdisk -l | grep sd
+# dmesg | grep sd
+
+To unmount either do:
+1) sudo umount /media/flashdisk/[name]
+ --- OR ---
+2) sudo caja
+  - right click on drives to unmount them
+
+Creating ISO image on USB Flash for installation
+------------------------------------------------
+1) Download ISO image for distro
+2) Run "dmesg" on command line, plug USB drive into socket, and note the name 
+   of the connected device (normally sdb, sdc, etc.)
+> dmesg
+sd 12:0:0:0: Attached scsi generic sg3 type 0
+[3893769.692686] sd 12:0:0:0: [sdc] 60063744 512-byte logical blocks: (30.7 GB/28.6 GiB)
+[3893769.693712] sd 12:0:0:0: [sdc] Write Protect is off
+[3893769.693715] sd 12:0:0:0: [sdc] Mode Sense: 43 00 00 00
+[3893769.693939] sd 12:0:0:0: [sdc] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+[3893769.706309]  sdc: sdc1 sdc2
+[3893769.707856] sd 12:0:0:0: [sdc] Attached SCSI removable disk
+
+3) Login as root:
+> sudo -s
+
+4) Make sure that the device is not mounted. Following command should return
+nothing:
+> findmnt /dev/sdc
+> findmnt /dev/sdc1
+> findmnt /dev/sdc2
+
+4b) If you get a result like the following:
+TARGET                                    SOURCE    FSTYPE  OPTIONS
+/run/media/mbopf/Ubuntu 16.04.3 LTS amd64 /dev/sdc1 iso9660 ro,nosuid,nodev,relatime,uid=21259,gid=21
+
+run umount based on the TARGET:
+> unmount /run/media/mbopf/Ubuntu\ 16.04.3\ LTS\ amd64
+
+4c) Alternatively, running the df command will show mounted drives.
+
+5) Carefully use the "dd" command to write the ISO image. Make sure you get 
+   the drive letters correct or you could overwrite your hard drive!!!
+
+> dd if=/home/mbopf/Desktop/ubuntu-16.04.3-desktop-amd64.iso of=/dev/sdc bs=512k
+
+(FROM: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/installation_guide/sect-making-usb-media)
+
+Format usb Flash drive using "gparted"
+---------------------------------------
+Run "gparted" as described here:
+https://www.howtogeek.com/howto/17001/how-to-format-a-usb-drive-in-ubuntu-using-gparted/
+
+
+tcpdump command - used to "snoop" on IP traffic
+---------------
+- Possibly useful, but didn't actually see "bytes going across":
+
+1) login as root
+2) run command:
+  /usr/sbin/tcpdump -vv -A -s 0 not host lhcsss.nlm.nih.gov and not host lhcsss2 and not host ceb-netapp10910
+3) may want to redirect to file
+
+Here is another version that works better for listening to HTTP POST commands
+which returns all traffic between archive & local machine:
+
+sudo /usr/sbin/tcpdump -XSs 0 host 130.14.52.14
+ -OR-
+sudo /usr/sbin/tcpdump -XSs 0 host 130.14.52.14 >& ~/outfile
+
+
+Enscript (9Feb2009)
+-------------------
+- Due to changes in enscript, had to copy entire /usr/share/enscript/hl 
+  directory to ~/.enscript and modified only the style_emacs.st file to
+  provide better colors for printing.
+- For listing of color names, see /usr/share/X11/rgb.txt (it's deprecated).
+
+Writing Data DVDs (not working as of 27 July 2009)
+(Got this to work after a couple DVD remounts on 16Aug2010)
+-----------------
+From: 
+http://www.cyberciti.biz/tips/howto-linux-write-burn-data-to-dvd-or-dvdrw.html
+
+[Note - I currently had to be 'root' in order to access /dev/dvd]
+
+First create the ISO image
+# mkisofs -r -o /tmp/var-www-disk1.iso /var/www
+
+Now use the growisofs command to write the ISO onto the DVD:
+# growisofs -Z /dev/dvd=/tmp/var-www-disk1.iso
+
+To append more data for same DVD:
+# growisofs -M /dev/dvd /tmp/file.1
+
+To format (erase) a DVD:
+# dvd+rw-format -force /dev/dvd
+The dvd+rw-format command formats dvd disk in the specified dvd drive.
+
+To display information about dvd drive and disk using dvd+rw-mediainfo command:
+# dvd+rw-mediainfo /dev/dvd
+
+Visit official web site: http://fy.chalmers.se/~appro/linux/DVD+RW/
+
+Mount DVD/CD
+------------
+As root:
+#mkdir /media/dvd (if doesn't exist)
+#mount /dev/hda /media/dvd
+
+
+Trying to create ISO CD (28Apr2010)
+-----------------------------------
+1) Make sure the "haldaemon" or "hald" service is running
+2) Verify that System->Preferences->Removable Drives and Media Preferences" is
+set to "Burn a CD or DVD when blank disc inserted"
+3) Insert blank CD, preferrably RW in case of bad burn
+4) The Nautilus "File Browser" should pop up, if not bring it up
+5) Find the ISO you wish burn burn. Right click and select "Burn to Disc"
+6) Don't choose "Fastest possible" burn speed, as this can make a coaster. 2x
+worked okay for a RW
+
+http://www.yolinux.com/TUTORIALS/LinuxTutorialCDBurn.html
+
+New way to set up Java so version can be selected (not automatically updated)
+-----------------------------------------------------------------------------
+- Download latest jdk-[version]-linux-x64.tar.gz version of JDK, unpack it, and 
+  place directory in /usr/java.
+- Create or update symbolic link named "latest" to point to most recent jdk.
+- Links in /usr/bin point to /usr/java/latest
+
+Mount AMIT share
+----------------
+sudo mkdir /amit-project
+sudo mount lhcdevfiler:/vol/ceb/amit-project /amit-project
+
+Services
+--------
+RHEL 7 now uses "systemctl" to start, stop, and enable services
+So the following will start up tomcat:
+
+sudo systemctl start tomcat
+ - OR -
+sudo sytemctl enable glassfish
+
+The services are now found in /usr/lib/systemd/system instead of /etc/init.d
+
+Remote Desktop (7 Apr 2016)
+---------------------------
+Followed process in http://www.itworld.com/article/2988289/linux/how-to-install-and-use-rdesktop-the-remote-desktop-client-for-linux.html
+
+Following steps most important:
+
+# tar xvzf rdesktop-1.8.3.tar.gz
+# cd rdesktop-1.8.3
+
+Needed to add the openssl-devel libraries, but all worked well after that
+
+#sudo yum install openssl-devel
+
+# ./configure --disable-credssp --disable-smartcard
+# make
+# sudo make install
+
+- Also modified ~/bin/rdesktop/rdesktopScript.sh to use /usr/local/bin
+
+Problem using ssh to login to ceb (Apr. 19, 2016)
+------------------------------------------------
+Using ssh to log into "ceb" wouldn't work, but the IP (130.14.52.14) did. Leif
+realized that the file /etc/gai.conf needed world read, so changed it from 600
+to 644.
+
+Find local host names and their IPs
+-----------------------------------
+ypcat hosts | grep [partial name]
+
+Adding windows /qdrive and /nci to auto-mounted dirs (updated ~2017Mar)
+--------------------------------------------
+Add following line to /etc/fstab (preferably, copy and paste from old version
+or perhaps copy from ceb-stage-lx):
+
+lhcuserfiler:/vol/homevol/home/mbopf /qdrive nfs rw,fg,nosuid,vers=3 0 0
+lhcdevfiler:/vol/ceb2/amit-project /amit-project nfs rw,fg,nosuid,vers=3 0 0
+ceb-fas3040-1:/vol/vol1_750GB_amit/nci /nci nfs rw,fg,nosuid,vers=3 0 0
+ceb-fas3040-1:/vol/vol1_750GB_amit_datascience /dataScience nfs rw,fg,nosuid,vers=3 0 0
+
+> sudo mkdir /qdrive /nci /amit-project /dataScience
+> sudo mount lhcuserfiler:/vol/homevol/home/mbopf /qdrive
+> sudo mount lhcdevfiler:/vol/ceb2/amit-project /amit-project
+> sudo mount ceb-fas3040-1:/vol/vol1_750GB_amit/nci /nci
+> sudo mount ceb-fas3040-1:/vol/vol1_750GB_amit_datascience /dataScience
+
+Getting MATE/mate screensaver to use securid/RSA instead of password
+--------------------------------------------------------------------
+Added following line at top of /etc/pam.d/mate-screensaver:
+
+auth  sufficient  pam_securid.so
+
+Modifying printer settings (duplex, stapling, 3-hole punch, etc)
+----------------------------------------------------------------
+sudo system-config-printer
+
+A good yum commands to know:
+---------------------------
+yum whatprovides <filename | library | executable, etc>
+sudo yum repolist
+sudo yum search <package (can contain wildcards)>
+sudo yum info <package (can contain wildcards)>
+
+Command that tracks usage of libraries and files:
+------------------------------------------------
+lsof [filename]
+
+-------------------------------------
+Determine open/used ports on a system
+-------------------------------------
+> netstat -tlnp
+
+-------------------------------
+Adobe flash (flashplayer, etc.)
+-------------------------------
+https://www.tecmint.com/install-adobe-flash-on-centos-rhel-fedora-linux/
+https://www.if-not-true-then-false.com/2010/install-adobe-flash-player-10-on-fedora-centos-red-hat-rhel/
+
+# CentOS/RHEL 7.3 #
+yum install flash-plugin alsa-plugins-pulseaudio libcurl
+
+# test (may require browser restart)
+http://www.adobe.com/software/flash/about/
+
+---------------
+scp not working - 2017May23
+---------------
+Check that .bashrc or ~/.bashrc doesn't output anything since it will break
+the SCP protocol. https://superuser.com/questions/395356/scp-doesnt-work-but-ssh-does
+
+------------------------
+Print text file from vim
+------------------------
+Inside vim at ':' prompt
+:hardcopy > filename.ps
+
+From command line:
+> ps2pdf filename.ps
+> atril filename.pdf
+Use atril to print file
+
+-------------------------
+Install MP3 for Rhythmbox - Don't do this by default; might be confusing NVIDIA drivers
+-------------------------
+#sudo yum localinstall --nogpgcheck https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm
+#sudo yum localinstall --nogpgcheck https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-7.noarch.rpm
+
+#sudo yum install gstreamer1-plugins-ugly.x86_64
+
+-----------------------------------------------------------
+Update changes gdm authentication from passcode to password
+-----------------------------------------------------------
+Update overwrites /etc/pam.d/gdm-password. Need to have first line be:
+
+auth    sufficient  pam_securid.so
+
+To force this to take affect, need to restart gdm:
+> sudo systemctl restart gdm
+
+-------------------------------------------
+Modifying/creating Gnome menu shortcuts
+-------------------------------------------
+See:
+https://superuser.com/questions/806448/how-to-make-a-desktop-icon-on-centos-7
+
+Basically modify or copy .desktop files in /usr/share/applications. Can copy
+to Desktop, or modify in place.
+
+-----------------------------------------
+Make changes to Gnome desktop environment
+-----------------------------------------
+Run the command line app:
+> gnome-tweak-tool
+
+-------------------------------------------
+Change size of Gnome desktop icons
+-------------------------------------------
+Size of desktop icons is determined by Nautilus setting:
+org.gnome.nautilus.icon-view
+The default is 'large' with smaller options being 'standard' and 'small'.
+
+This value can be set by opening the Nautilus file manager, and hitting
+"CTRL -" to get preferred size. Or, run "dconf-editor" and select
+org->gnome->nautilus->icon-view->default-zoom-level
+
+------------------
+Check port mapping
+------------------
+nmap -p- -A -sV --version-all 130.14.109.50
+General UNIX notes (common to Linux & Solaris - in theory)
+----------------------------------------------------------
+
+crontab
+-------
+To get crontab -e to use vi, log in as root run the following from bash prompt:
+bash> export EDITOR=vi
+bash> crontab -e
+
+
+Remove all newlines, including last one, from a file:
+----------------------------------------------------
+tr -d '\n' < inputFile > outputFile
+
+
+Redirect stderr to the bit bucket
+-----------------------------------------------
+[lhce-bopf-lx|201]$ <command> 2> /dev/null
+
+Redirect stderr to stdout and so we can pipe it
+-----------------------------------------------
+[lhce-bopf-lx|201]$ <command> 2>&1 | grep -v "stuff"
+
+Sort RollExp field (5 char. roll number, ".", 4 character exposure number)
+--------------------------------------------------------------------------
+sort -u -t . -k1,1n -k2.1,2.4n <filename> | less
+
+Rsync/copy while avoiding certain directories
+----------------------------------------
+rsync -avz --exclude '.snapshot' --exclude '.cache' --exclude '.Trash' \
+mbopf /data >& /tmp/rsync.out &
+
+Disk Usage avoid .snapshot
+---------------------------
+\du -s .[a-z]* * --exclude='.snapshot' --exclude='..' | sort -rn > \
+/home/mbopf/scratch/homeDirSizes/mbopfNew.txt
+
+Removing a managing a filename with special characters
+------------------------------------------------------
+http://www.unix.com/tips-tutorials-submission-queue/198879-how-manage-file-names-special-characters.html
+
+ls -i
+find . -maxdepth 1 -type f -inum <inode>
+
+Listening to communications
+----------------------------
+# Listen on port 80 and convert to ASCII
+tcpdump -A -i eth0 port 80
+
+IPv6 addresses (works sometimes...)
+--------------
+nslookup -query=AAAA $hostname
+(works for ceb -> 2607:f220:41e:7052::14
+           ceb-stage-lx : No answer
+           ceb-bopf23-lx : No answer)
+
+>ip -6 addr show 
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: em1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qlen 1000
+    inet6 2607:f220:41e:8109:9a90:96ff:fee2:925b/64 scope global mngtmpaddr dynamic 
+       valid_lft 2591883sec preferred_lft 604683sec
+    inet6 fe80::9a90:96ff:fee2:925b/64 scope link 
+       valid_lft forever preferred_lft forever
+
+
+ceb-bopf23-lx => 130.14.109.23
+2607:f220:41e:8109:9a90:96ff:fee2:925b
+
+
+Mount points (mounting directories, etc)
+----------------------------------------
+Configuration: /etc/auto.* /etc/rc.d/rc.local /etc/rc.d/netfs,autofs
+
+Mount qdrive is in /etc/rc.d/rc.local
+
+Determine SHA512 has for text string:
+-------------------------------------
+NOTE - need to use "printf" since "echo" will include newline
+
+$ printf 'password' | sha512sum -
+b109f3bbbc244eb82441917ed06d618b9008dd09b3befd1b5e07394c706a8bb980b1d7785e5976ec049b46df5f1326af5a2ea6d103fd07c95385ffab0cacbc86  -
+
+Sort files by time over full directory tree
+-------------------------------------------
+> find -printf "%TY-%Tm-%Td %TT %p\n" | sort -n
+
+to exclude SVN, try this:
+> find -not -path "svn" -not -name "*svn" -printf "%TY-%Tm-%Td %TT %p\n"|sort -n
+
+-----------------------------------------------------------------------------
+Recursive chmod to 755 without giving execute to regular files (2017.05.24)
+-----------------------------------------------------------------------------
+chmod -R u+rwX,go+rX,go-w /path
+
+for 775
+
+chmod -R ug+rwX,o+rX,o-w /path
+
+https://superuser.com/questions/91935/how-to-chmod-all-directories-except-files-recursively
+
+-----------------------------------------------------------
+Error trying to port forward (example was jupyter notebook) 29Jun2017
+-----------------------------------------------------------
+> ssh -N -f -L localhost:8888:localhost:8889 ceb-sardana12-lx
+bind: Cannot assign requested address
+
+Problem is often that it trying to bind to an IPV6 address rather than IPV4.
+This can be determined by adding -v flag and looking for a ::1 reference.
+
+Fix the command by adding the -4 flag:
+> ssh -4 -N -f -L localhost:8888:localhost:8889 ceb-sardana12-lx
+
+https://www.electricmonk.nl/log/2014/09/24/ssh-port-forwarding-bind-cannot-assign-requested-address/
+
+------------------------------
+Using cut and paste to add column of numbers together
+-----------------------------------------------------
+# Example from web access logs:
+awk -F\" '{print $6}' localhost_access_log.2018-01-30.txt | sort | uniq -c | sort -rn | tail -18 | awk '{print $1}' | paste -sd+ - | bc
+
+See: https://stackoverflow.com/questions/926069/add-up-a-column-of-numbers-at-the-unix-shell
+
+------------------------------
+Sound problems 11Oct2018
+-----------------------------
+- Main problem appeared to be that an old ~/.pulse/ directory and ~/.pulse-cookie file (from 2012) were 
+  hanging around and causing problems. Deleting them, creating new ~/.config/pulse/ directory, and 
+  rebooting seemed to fix the issues. There we lots of errors in /var/log/messages when running which 
+  pointed to the problem.
+- Useful: https://fedoraproject.org/wiki/How_to_debug_sound_problems
+
+----------------------------------------------
+Remember running applications when logging out
+----------------------------------------------
+- Run the following command:
+> gnome-session-properties
+-> Select the Option tab
+-> Select "Automatically remember running applications when logging out
+-> Click the "Remember Currently Running Applications" Button (optional)
+
+------------------------------------
+Can't find NLM hosts (on Ubuntu WSL)
+------------------------------------
+- Need to add to /etc/resolv.conf the following line:
+search nlm.nih.gov
+- at the top of the file, removing the commented out line.
+- Haven't seen this actually work, yet. Maybe after reboot of machine...
+
+-------------------------------------
+Shutdown Chrome (or other) gracefully
+-------------------------------------
+pkill --oldest chrome
+ -- OR --
+/usr/bin/pkill --oldest --signal TERM -f chrome
+
+-----------------
+Disable CapsLock
+-----------------
+xmodmap -e 'keycode 66 = NoSymbol'
+
+-----------------
+Find user groups
+-----------------
+ypcat group | grep ceb
+

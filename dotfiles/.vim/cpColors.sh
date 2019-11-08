@@ -1,0 +1,15 @@
+cp slate.vim colorDir
+cp distinguished.vim colorDir
+cp pablo.vim colorDir
+cp CandyPaper.vim colorDir
+cp earthburn.vim colorDir
+cp inkpot.vim colorDir
+cp jellybeans.vim colorDir
+cp janah.vim colorDir
+cp railscasts.vim colorDir
+cp zenesque.vim colorDir
+cp desert256.vim colorDir
+cp desertedocean.vim colorDir
+cp wombat256i.vim colorDir
+cp eva01.vim colorDir
+cp detailed.vim colorDir
