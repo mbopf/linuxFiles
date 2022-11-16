@@ -1,33 +1,3 @@
-Gotes on installing RedHat
---------------------------
-- Problem #1: SATA hard drive not recognized. Looks like this is fixed in
-  newer version of Red Hat Enterprise 3 (update 2 or 3). See
-  http://www.redhat.com/archives/taroon-list/2004-August/msg00166.html
-
-  - Fixed using latest (v3 update 3).
-
-- Problem #2: Problem recognizing display card
-  - Set following fields in /etc/X11/XF86Config:
-    Driver      "vesa"
-    VendorName  "Videocard vendor"
-    BoardName   "VESA driver (generic)"
-
-- Problem #3: Can't mount /home/mbopf - no good clues; just shutdown and restart. Possible
-  problem with /etc/mtab?? Errors in /var/log/messages don't really help...
-
-- Problem with ant and Java 1.5 (OLD and out of date!!! - MWB 29Apr2013)
-  - Ant kept using old version of java. Fixed by uninstalling old RH ant 
-    rpm (1.5.2) and installing latest version (1.6.2) in /opt. Added soft link
-    from /opt/ant to /opt/apache-ant-1.6.2. 
-  - Created /etc/profile.d/java.sh script which defines JAVA_HOME & ANT_HOME,
-    and adds them to the PATH.
-  - Java is installed in /usr/java/jdk1.5.0. Added a '/usr/j2se' soft link
-    which points to it. JAVA_HOME uses the latter such that when an upgrade
-    is made, we can simply add it and change the link.
-
-- To set up an alternate NISDOMAIN server, edit /etc/yp.conf
-
-------------
 Keyboard Navigation:
 
 See: http://www.novell.com/coolsolutions/tip/2289.html
@@ -60,32 +30,6 @@ There's also "mouse emulation" mode under X:
 > Pressing + down on its own does a double-click with the current button.
 > 0 clicks and holds down the current button.
 > . releases the button that 0 held down.
-
-
-scp
----
-Note - this command doesn't seem to like current .bash_profile/.bashrc. Need to
-move them on remote host (archive) before running. Don't know why...
-Example:
-scp ./cvsDiff.jar archive.nlm.nih.gov:/home/mbopf/tmp
-scp archive.nlm.nih.gov:/home/mbopf/tmp/cvsDiff.jar ./cvsDiff.jar
-
-
-Missing modules when installing from rpm
-----------------------------------------
-Error when trying to install pine (rpm -ivh pine-4.64-1.i386.rpm):
-error: Failed dependencies:
-        libldap.so.2 is needed by pine-4.64-1.i386
-    Suggested resolutions:
-        compat-openldap-2.1.30-4.i386.rpm
-
-Following command finds necessary rpm (as suggested above):
-prompt> rpm -q --redhatprovides libldap.so.2
-compat-openldap-2.1.30-4
-
-Go to:
-http://www.rpmfind.net/
-and search for "compat-openldap" (old version number wasn't found). 
 
 
 /bin/ls: Argument list too long
@@ -455,6 +399,10 @@ Rsync/copy while avoiding certain directories
 rsync -avz --exclude '.snapshot' --exclude '.cache' --exclude '.Trash' \
 mbopf /data >& /tmp/rsync.out &
 
+rsync MFM csl between /MFMDatasets and /slurm_storage
+-----------------------------------------------------
+rsync -avhz --exclude="/**/*" --exclude=".*" /MFMDatasets/MFM_bopf/data/csl/ /slurm_storage/mbopf/projects/MFM_bopf/data/csl/
+
 Disk Usage avoid .snapshot
 ---------------------------
 \du -s .[a-z]* * --exclude='.snapshot' --exclude='..' | sort -rn > \
@@ -581,12 +529,90 @@ pkill --oldest chrome
 /usr/bin/pkill --oldest --signal TERM -f chrome
 
 -----------------
-Disable CapsLock
+- Disable CapsLock
 -----------------
 xmodmap -e 'keycode 66 = NoSymbol'
+
+-----------------
+- Remap CapsLock to Tab (this doesn't seem to work in Mint)
+-----------------
+xmodmap -e 'keycode 66 = Tab ISO_Left_Tab Tab ISO_Left_Tab'
+  -- OR add to ~/.Xmodmap
+keycode 66 = Tab ISO_Left_Tab Tab ISO_Left_Tab
 
 -----------------
 Find user groups
 -----------------
 ypcat group | grep ceb
 
+-------------------------------------------
+Bash command line global search and replace
+-------------------------------------------
+!!:gs/search/replace/
+
+---------------------
+Problem with grep -f
+---------------------
+When doing grep -f using a file of search strings, if there is a blank line
+at the end it will find everything. :)
+
+-----------------------------------------------------
+Find multiple patterns on command line (not using -f)
+-----------------------------------------------------
+grep 'pattern1\|pattern2' fileName_or_filePath
+-- OR --
+grep -E 'pattern1|pattern2' fileName_or_filePath
+-- OR --
+grep -e pattern1 -e pattern2 fileName_or_filePath
+
+-------------------
+Count fields in CSV
+-------------------
+# Need to remove everything accept the commas and then count
+> head -1 <filename> | sed 's/[^,]//g' | wc -c
+
+---------------------
+Multiple sed commands
+---------------------
+> sed -e 's/this/that' -e 's/foo/bar' filename.txt | head 
+
+---------------------
+Convert enscript to PDF
+-----------------------
+> alias enl2p
+alias enl2p='enscript -r2G -fCourier7 --color -Epython'
+> enl2p predict_main.py -p predict_main.ps
+[ 3 pages * 1 copy ] left in predict_out.ps
+22 lines were wrapped
+> ps2pdf predict_out.ps predict_out.pdf
+
+---------------------
+Change date / timestamp on a file
+---------------------
+touch -a -m -t 202109071600.09 test
+
+-----------------------------------------------------------
+Check to see what processes are connected to a file(system)
+-----------------------------------------------------------
+lsof /amit
+
+---------------------------------------------------
+Remove all special characters from a file using sed
+---------------------------------------------------
+FROM: https://stackoverflow.com/questions/43108359/how-to-remove-all-special-characters-in-linux-text
+
+> sed $'s/[^[:print:]\t]//g' file.txt
+
+---------------------------------------------------
+Remove Byte ordering mark from a file using awk
+---------------------------------------------------
+https://stackoverflow.com/questions/1068650/using-awk-to-remove-the-byte-order-mark
+# Using the knowledge that the default action in awk is to print the record:
+# 1 is the shortest condition that always evaluates to true, so each record is printed.
+awk 'NR==1{sub(/^\xef\xbb\xbf/,"")}1' INFILE > OUTFILE
+
+---------------------------------------------------
+Replace non-breaking space in a file using awk
+---------------------------------------------------
+https://superuser.com/questions/517847/use-sed-to-replace-nbsp-160-hex-00a0-octal-240-non-breaking-space
+## I never got this to work
